@@ -18,4 +18,4 @@ Double-click `start.bat` or run:
 pwsh -ExecutionPolicy Bypass -File list-installed.ps1
 ```
 
-Output is written to `installedprogs.md`.
+Output is written to `output.md`.

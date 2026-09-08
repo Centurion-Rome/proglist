@@ -1,9 +1,10 @@
-$outFile = Join-Path $PSScriptRoot "installedprogs.md"
+$outFile = Join-Path $PSScriptRoot "output.md"
 
 $md = "# Installed Programs`n`n"
 $md += "_Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')_`n`n"
 
 # --- Installed Programs ---
+Write-Host "[1/6] Collecting installed programs..." -ForegroundColor Cyan
 $progs = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*,
                           HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*,
                           HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*,
@@ -18,8 +19,10 @@ $md += "| --- | --- | --- | --- |`n"
 foreach ($p in $progs) {
     $md += "| $($p.DisplayName) | $($p.DisplayVersion) | $($p.Publisher) | $($p.InstallDate) |`n"
 }
+Write-Host "  Found $($progs.Count) programs" -ForegroundColor Green
 
 # --- Startup Programs ---
+Write-Host "[2/6] Collecting startup programs..." -ForegroundColor Cyan
 $md += "`n## Startup Programs`n`n"
 
 $md += "### Registry (HKCU)`n`n"
@@ -47,8 +50,10 @@ foreach ($sp in $startupPaths) {
         $md += "| $($_.Name) | $($_.FullName) |`n"
     }
 }
+Write-Host "  Done" -ForegroundColor Green
 
 # --- License Keys ---
+Write-Host "[3/6] Collecting license information..." -ForegroundColor Cyan
 $md += "`n## License Information`n`n"
 
 $os = Get-WmiObject Win32_OperatingSystem
@@ -74,8 +79,10 @@ if ($license) {
         $md += "| $($l.Name) | Status: $status, Key: $($l.PartialProductKey) |`n"
     }
 }
+Write-Host "  Done" -ForegroundColor Green
 
 # --- Portable Apps ---
+Write-Host "[4/6] Scanning portable app directories..." -ForegroundColor Cyan
 $md += "`n## Portable Apps`n`n"
 $md += "_Detected from common portable locations (F:\Programs, E:\Programs)_`n`n"
 
@@ -89,8 +96,10 @@ foreach ($root in $portableRoots) {
         }
     }
 }
+Write-Host "  Done" -ForegroundColor Green
 
 # --- Available Updates ---
+Write-Host "[5/6] Checking winget for available updates..." -ForegroundColor Cyan
 $md += "`n## Available Updates`n`n"
 $md += "_Checked via `winget upgrade`_`n`n"
 
@@ -120,9 +129,13 @@ if ($updates.Count -gt 0) {
         $md += "| $($u.Name) | $($u.ID) | $($u.Current) | $($u.Version) | $($u.Source) |`n"
     }
     $md += "`n_$($updates.Count) update(s) available_`n"
+    Write-Host "  Found $($updates.Count) update(s)" -ForegroundColor Yellow
 } else {
     $md += "_No updates available or winget not found._`n"
+    Write-Host "  No updates found" -ForegroundColor Green
 }
 
+# --- Write Output ---
+Write-Host "[6/6] Writing $outFile..." -ForegroundColor Cyan
 $md | Out-File -Encoding UTF8 $outFile
 Write-Host "Saved to $outFile" -ForegroundColor Green
