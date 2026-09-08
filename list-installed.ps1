@@ -90,5 +90,39 @@ foreach ($root in $portableRoots) {
     }
 }
 
+# --- Available Updates ---
+$md += "`n## Available Updates`n`n"
+$md += "_Checked via `winget upgrade`_`n`n"
+
+$wingetOut = winget upgrade 2>$null
+$updates = @()
+$inTable = $false
+foreach ($line in $wingetOut) {
+    if ($line -match '^-{5,}') { $inTable = $true; continue }
+    if ($inTable -and $line.Trim()) {
+        $parts = $line -split '\s{2,}'
+        if ($parts.Count -ge 4) {
+            $updates += [PSCustomObject]@{
+                Name    = $parts[0]
+                ID      = $parts[1]
+                Current = $parts[2]
+                Version = $parts[3]
+                Source  = if ($parts.Count -ge 5) { $parts[4] } else { "" }
+            }
+        }
+    }
+}
+
+if ($updates.Count -gt 0) {
+    $md += "| Program | ID | Installed | Available | Source |`n"
+    $md += "| --- | --- | --- | --- | --- |`n"
+    foreach ($u in $updates) {
+        $md += "| $($u.Name) | $($u.ID) | $($u.Current) | $($u.Version) | $($u.Source) |`n"
+    }
+    $md += "`n_$($updates.Count) update(s) available_`n"
+} else {
+    $md += "_No updates available or winget not found._`n"
+}
+
 $md | Out-File -Encoding UTF8 $outFile
 Write-Host "Saved to $outFile" -ForegroundColor Green
